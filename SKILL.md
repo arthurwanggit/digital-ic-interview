@@ -27,7 +27,7 @@ metadata:
 | 1. 获取简历 | 1min | 要求候选人提供简历，无论粘贴文本还是文件路径，自行读取解析 |
 | 2. 项目深挖 | 20-25min | 根据简历匹配6道项目题 + 2道基础概念题，共约8题 |
 | 3-4. 编码实战与开放设计 (To be Done) | — | 此阶段内容待补充 |
-| 5. 总结反馈 | 3-5min | 逐维度评分 + 亮点 + 改进建议 + 保存记录 |
+| 5. 总结反馈 | 3-5min | 逐维度评分 + 亮点 + 改进建议 |
 
 ---
 
@@ -139,7 +139,7 @@ metadata:
 
 ### 知识点5：时序分析
 
-**触发关键词：** 时序, timing, setup, hold, CDC, 跨时钟域, SDC, 约束, 打拍, timing closure, STA
+**触发关键词：** 时序, timing, setup, hold, CDC, 跨时钟域, SDC, 约束, 打拍, timing closure, STA, CRPR, OCV, AOCV, launch path, capture path, 发射路径, 捕获路径, max transition, 最大转换时间, timing sanity check, max fanout, max capacitance, clock period, 时钟周期, clock uncertainty, clock latency
 
 **追问路线：**
 
@@ -147,11 +147,15 @@ metadata:
 |---|---|
 | L1-基础 | "你项目中有跨时钟域的信号吗？具体是哪到哪？频率各是多少？你怎么处理的？" |
 | L1-基础 | "setup time和hold time分别是什么？violation各发生在什么场景？" |
+| L1-基础 | "SDC里有哪些常见的约束项？max fanout、max cap和max tran哪个不在SDC定义的范围内？" |
 | L2-深入 | "慢时钟域到快时钟域 / 快时钟域到慢时钟域，处理方式一样吗？分别用什么？" |
 | L2-深入 | "两级同步器能解决所有CDC问题吗？什么时候需要握手/异步FIFO？" |
 | L2-深入 | "你遇到的setup violation具体怎么修的？改RTL还是改约束？为什么？" |
+| L2-深入 | "OCV做timing check时，setup用launch path和capture path分别取什么delay值？为什么？" |
+| L2-深入 | "CRPR全称是什么？它解决的是什么问题？你们项目里有关闭CRPR的选项吗？" |
 | L3-边界 | "SDC里你怎么约束异步时钟？false path和multicycle path有什么区别？你的设计里用过吗？" |
 | L3-边界 | "你的两级同步器第一级输出什么时候可能还处在亚稳态？你怎么证明它不会导致功能错误？" |
+| L3-边界 | "timing sanity check是什么？你项目中是在哪个阶段做的——placement后还是routing后？为什么要在net delay缺失的情况下做timing检查？" |
 
 ---
 
@@ -226,22 +230,27 @@ metadata:
 
 ### 知识点10：低功耗
 
-**触发关键词：** 低功耗, clock gating, UPF, power domain, 门控
+**触发关键词：** 低功耗, clock gating, UPF, power domain, 门控, IR drop, 电压降, leakage power, 漏电功耗, HVT, LVT, SVT, RVT, threshold voltage, 阈值电压, drive strength, 驱动强度, voltage drop, 电源完整性, power integrity, power grid, 电源网格
 
 **追问路线：**
 
 | 层级 | 追问内容 |
 |---|---|
 | L1-基础 | "你设计里低功耗做了哪些措施？clock gating是怎么加的——手动还是工具自动？" |
+| L1-基础 | "HVT、LVT、RVT、SVT这几种cell的主要区别是什么？leakage和speed分别怎么排列？" |
 | L2-深入 | "clock gating对你的timing有什么影响？setup变紧了吗？hold呢？" |
 | L2-深入 | "UPF里面power domain、isolation cell、level shifter各是什么作用？你的设计里用了哪些？" |
+| L2-深入 | "漏电功耗为什么跟阈值电压成反比？LVT cell为什么在先进工艺下漏电占比越来越大？" |
+| L2-深入 | "IR drop在你项目里控制在多少以内？static IR drop和dynamic IR drop有什么区别？" |
 | L3-边界 | "power domain关断重启后，里面的状态怎么恢复？retention register和save/restore两种方式你怎么选？" |
+| L3-边界 | "如果IR drop超过10%，对setup和hold分别有什么影响？你见过IR drop导致timing signoff不过的情况吗？" |
+| L3-边界 | "你的设计里LVT cell大概占多少比例？工具做VT swap的时候，你怎么控制leakage和timing的平衡——给工具设了leakage上限吗？" |
 
 ---
 
 ### 知识点11：先进工艺与DFT
 
-**触发关键词：** 5nm, 7nm, 12nm, 16nm, DFT, scan, JTAG, MBIST, ATPG, OCV, AOCV
+**触发关键词：** 5nm, 7nm, 12nm, 16nm, DFT, scan, JTAG, MBIST, ATPG, OCV, AOCV, scan chain removal, 扫描链移除, scan reorder, 扫描链重排
 
 **追问路线：**
 
@@ -251,7 +260,117 @@ metadata:
 | L1-基础 | "JTAG的TAP状态机有几个状态？你的设计中TAP控制器在什么场景下使用？" |
 | L2-深入 | "ATPG产生pattern时，fault coverage到多少了？哪些fault是untestable的？" |
 | L2-深入 | "先进工艺下你遇到过OCV(On-Chip Variation)导致的时序问题吗？怎么处理的？" |
+| L2-深入 | "为什么placement之前要先把scan chain拆掉？不拆的话placement会有什么问题？" |
 | L3-边界 | "MBIST测试SRAM时，写读pattern你用的是哪种？March C-算法覆盖了哪些fault？" |
+| L3-边界 | "scan reorder是根据什么来做的——走线长度还是timing？reorder后scan chain的coverage会变吗？" |
+
+---
+
+### 知识点12：后端物理设计流程 (Physical Design Flow)
+
+**触发关键词：** Floorplan, Floorplanning, placement, CTS, P&R, 后端流程, 物理设计, utilization, 利用率, filler cell, macro placement, standard cell, 标准单元, soft blockage, hard blockage, double back, flipped rows, channel spacing
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | "后端流程从netlist到GDSII经历了哪些步骤？每个步骤的输入输出分别是什么？" |
+| L1-基础 | "你项目里utilization是多少？这个值是综合后、place后还是route后的？standard cell和macro各自占比大概多少？" |
+| L2-深入 | "soft blockage和hard blockage有什么区别？你的设计里在什么场景下加了soft blockage——是给clock tree留空间还是给congestion区域？" |
+| L2-深入 | "macro placement一般放在die的什么位置？依据是什么——IO connectivity优先还是功耗/热分布优先？" |
+| L2-深入 | "placement optimization后utilization为什么可能上升或下降？filler cell在哪个阶段加、起什么作用？" |
+| L3-边界 | "double back + flipped rows的floorplan方式相比普通排列有什么优势？你项目用的是哪种？" |
+| L3-边界 | "如果你发现utilization到90%以上导致routing congestion，你会怎么在floorplan阶段做调整——减小die size不现实的情况下？" |
+
+---
+
+### 知识点13：时钟树综合 (CTS)
+
+**触发关键词：** CTS, 时钟树, clock skew, 时钟偏斜, global skew, local skew, useful skew, CLKBUF, CLKINV, clock buffer, 时钟buffer, rise/fall time, skew balancing, clock latency
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | "CTS的主要目标是什么？clock skew和clock latency分别指什么、各自对timing有什么影响？" |
+| L1-基础 | "global skew和local skew的区别是什么？你项目里signoff标准用的是哪个——global skew还是local skew？" |
+| L2-深入 | "CLKBUF和普通BUF有什么区别？为什么CTS优先用CLKBUF/CLKINV而不是普通buffer？" |
+| L2-深入 | "useful skew是什么？什么场景下利用useful skew反而能改善timing？你能举个例子吗？" |
+| L2-深入 | "你的时钟树上有多少级buffer？leaf pin到clock root的latency是多少？你怎么评价时钟树质量优劣？" |
+| L3-边界 | "如果CTS后clock skew偏大导致大量hold violation，你要怎么调整CTS参数——是改target skew还是改buffer list？" |
+| L3-边界 | "多时钟域设计里，两个异步时钟各自的CTS怎么做平衡？generate clock和master clock之间的skew你是怎么约束的？" |
+
+---
+
+### 知识点14：信号完整性与天线效应 (Signal Integrity & Antenna Effect)
+
+**触发关键词：** crosstalk, 串扰, shielding, 屏蔽, signal integrity, 信号完整性, antenna effect, 天线效应, antenna ratio, diode insertion, 二极管插入, VSS, floating
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | "crosstalk是怎么产生的？crosstalk delta delay对setup和hold分别是什么影响——一个变好一个变差对吗？" |
+| L1-基础 | "天线效应是什么？它发生在芯片制造的哪个阶段——是刻蚀(etching)还是沉积(deposition)过程？" |
+| L2-深入 | "shielding net一般接VSS还是接地？如果不接地而是接floating会怎样？" |
+| L2-深入 | "天线效应除了diode insertion还有哪些修复手段？buffer insertion能解决吗——为什么加buffer可以减少积累电荷？" |
+| L2-深入 | "antenna ratio怎么计算？你的工艺里不同metal层的antenna ratio上限一样吗——为什么高层金属ratio上限通常更宽松？" |
+| L3-边界 | "shielding覆盖率不够的时候你还有什么备选方案？增大spacing和加shielding在面积和效果上怎么权衡？" |
+| L3-边界 | "crosstalk delta delay导致setup violation，增大spacing、加buffer、换更高层金属，三种方式各有什么代价？你优先选哪种？" |
+
+---
+
+### 知识点15：物理布线 (Routing)
+
+**触发关键词：** routing, 布线, prerouting, metal layer, 金属层, metal resistance, routing congestion, 布线拥塞, pitch, wire, power routing, clock routing, metal stack, metal width, metal spacing
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | "你的设计用了多少层金属？哪些层做power routing、哪些做clock routing、哪些做signal routing？这样分配的依据是什么？" |
+| L1-基础 | "pitch是什么？min width和min spacing跟pitch的关系是什么——pitch = min width + min spacing？" |
+| L2-深入 | "为什么低层金属(M1/M2)比高层金属(M5/M6)电阻更大？低层金属RC delay是不是一定比高层大——电阻大但电容也可能更小？" |
+| L2-深入 | "prerouting通常指routing哪类net？你在项目中遇到过哪些net需要prerouting——power stripe还是clock？" |
+| L2-深入 | "routing congestion你是怎么评估的？required tracks和available tracks的比值多少算严重？你是怎么缓解congestion的？" |
+| L3-边界 | "7层金属工艺里，如果你把power放M6/M7、clock放M4/M5，signal只能用M1-M3——这种分配有什么优缺点？如果把power放在M1/M2会有什么问题？" |
+| L3-边界 | "routing congestion在cell density高的区域，除了spread cells还有哪些手段？shielding和congestion之间有没有冲突——加了shielding会不会让congestion更严重？" |
+
+---
+
+### 知识点16：IR Drop与电源完整性 (IR Drop & Power Integrity)
+
+**触发关键词：** IR drop, 电压降, power integrity, 电源完整性, EM, electromigration, 电迁移, current density, 电流密度, power grid, 电源网格, voltage drop, .tf, stripe
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | "IR drop是什么——你项目里IR drop控制在多少以内？static IR drop和dynamic IR drop的区别是什么？" |
+| L1-基础 | "电迁移(EM)是什么？电流密度过大会导致什么后果——是金属断路还是短路？最大电流密度在哪个文件里定义？" |
+| L2-深入 | "你的design里IR drop最严重的区域通常在哪？为什么wire bond芯片的center区域IR drop往往最大？" |
+| L2-深入 | "IR drop违反了你怎么办——加宽金属线、加stripe、分散cell density，三者各有什么代价？" |
+| L2-深入 | "EM violation在你项目中出现过吗？你是怎么修的——widen metal还是加parallel via？哪种更有效？" |
+| L3-边界 | "如果芯片规模翻倍，你现有的power grid设计还能复用吗？横向stripe和纵向stripe怎么重新规划——stripe pitch和width怎么重算？" |
+| L3-边界 | "IR drop超过10%会导致什么——逻辑cell看到的实际VDD降低，gate delay会增大还是减小？对setup和hold各有什么影响？" |
+
+---
+
+### 知识点17：标准单元与工艺库 (Standard Cell & Technology Library)
+
+**触发关键词：** standard cell, 标准单元, HVT, LVT, RVT, SVT, threshold voltage, 阈值电压, drive strength, 驱动强度, .lib, .tf, 工艺库, leakage power, 漏电, filler cell, unit tile, timing arc, NVt lookup table, 查找表
+
+**追问路线：**
+
+| 层级 | 追问内容 |
+|---|---|
+| L1-基础 | ".lib里包含哪些关键信息？timing arc、power table、leakage里你最关注哪个——为什么？" |
+| L1-基础 | "什么场景下要用高驱动强度的buffer？drive strength增大后，面积、延迟、功耗分别怎么变化？" |
+| L2-深入 | "cell delay由哪两个因素决定——input transition和output load的关系是什么？NLDM/NVt lookup table里横轴纵轴分别是什么？" |
+| L2-深入 | "你的项目在哪一步做了VT swap——综合阶段还是PR阶段？工具自动做还是手动调？VT swap对hold和setup分别有什么影响？" |
+| L2-深入 | "unit tile cell是什么？不同工艺的unit tile height一样吗——7track/9track/12track library各是什么意思？" |
+| L3-边界 | "如果给你一个新工艺的.lib和.tf文件，没有参考脚本，你怎么完成netlist到GDSII的全流程？你会先做哪些检查？" |
+| L3-边界 | "先进工艺下LVT的leakage比重越来越大——你的设计里LVT cell大概占多少比例？设了什么上限来控制total leakage？" |
 
 ---
 
@@ -338,43 +457,34 @@ metadata:
 
 ---
 
-## 面试历史记录
+## 题目复盘
 
-每轮面试结束后，将面试记录保存为JSON文件：
+阶段5评分完成后，面试官主动告知候选人：
 
-**保存路径：** `interview-history/YYYY-MM-DD-session-XX.json`
+> "面试评分结束。需要我对本轮所有题目进行复盘，给出参考答案吗？不需要可以直接说明。"
 
-**JSON格式：**
+- 候选人接受 → 进入逐题复盘
+- 候选人拒绝/跳过 → 输出"面试结束。"立即终止
 
-```json
-{
-  "session_id": "YYYY-MM-DD-01",
-  "date": "2026-07-15",
-  "candidate_summary": "2年SOC设计经验，WiFi芯片项目...",
-  "stages": {
-    "project_deep_dive": {
-      "knowledge_points_asked": ["AXI总线outstanding", "SPI后仿debug", ...],
-      "notes": "..."
-    },
-    "coding": {
-      "question": "同步FIFO设计",
-      "notes": "..."
-    },
-    "design": {
-      "question": "DMA架构设计",
-      "notes": "..."
-    }
-  },
-  "scores": {
-    "fundamentals": 3,
-    "coding": 4,
-    "design_thinking": 3,
-    "communication": 4
-  },
-  "overall_rating": "推荐",
-  "highlights": ["总线理解深入", "debug思路清晰"],
-  "improvements": ["CDC概念需要加强", "时序约束经验不足"]
-}
+复盘规则：
+1. 逐题回顾本轮所有提问（含追问层），每次一道
+2. 每题结构：先复述题目原文 → 简述候选人回答概况 → 给出参考答案要点（2-3条，简洁）
+3. 候选人对参考答案有疑问可追问**最多1次**
+4. 全部复盘完毕后输出"复盘完毕，面试结束。"
+
+复盘输出格式：
+
+```
+【题目复盘】
+
+第1题（知识点：AXI总线-通道结构）
+原题："AXI的5个通道分别是什么？"
+你提到了读地址、写地址、读数据、写数据，漏了写响应通道。
+参考：AXI共5通道——读地址/读数据/写地址/写数据/写响应。写响应通道用于slave向master报告写入事务完成状态，support out-of-order返回。
+
+追问："你的项目里outstanding设了多少，怎么算出来的？"
+你回答XXX。
+参考：outstanding数量取决于带宽需求——带宽=数据位宽×频率×outstanding/平均latency。设太小吞吐不够，设太大需要buffer深、面积大，需权衡。
 ```
 
 ---
