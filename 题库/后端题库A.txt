@@ -1,0 +1,260 @@
+1) Chip utilization depends on ___.
+a. Only on standard cells
+b. Standard cells and macros
+c. Only on macros
+d. Standard cells macros and IO pads
+
+2) In Soft blockages ____ cells are placed.
+a. Only sequential cells
+b. No cells
+c. Only Buffers and Inverters
+d. Any cells
+
+3) Why we have to remove scan chains before placement?
+a. Because scan chains are group of flip flop
+b. It does not have timing critical path
+c. It is series of flip flop connected in FIFO
+d. None
+
+4) Delay between shortest path and longest path in the clock is called ____.
+a. Useful skew
+b. Local skew
+c. Global skew
+d. Slack
+
+5) Cross talk can be avoided by ___.
+a. Decreasing the spacing between the metal layers
+b. Shielding the nets
+c.  Using lower metal layers
+d. Using long nets
+
+6) Prerouting means routing of _____.
+a. Clock nets
+b. Signal nets
+c. IO nets
+d. the net with special requirement
+
+7) Which of the following metal layer has Maximum resistance?
+a. Metal1
+b. Metal2
+c. Metal3
+d. Metal4
+
+8) What is the major goal of CTS?
+a. Minimum IR Drop
+b. Minimum EM
+c. Minimum Skew
+d. Minimum Slack
+
+9) Usually Hold is fixed ___.
+a. Before Placement
+b. After Placement
+c. Before CTS
+d. After CTS
+
+10) To achieve better timing ____ cells are placed in the critical path.
+a. HVT
+b. LVT
+c. RVT
+d. SVT
+
+11) Leakage power is inversely proportional to ___.
+a. Frequency
+b. Load Capacitance
+c. Supply voltage
+d. Threshold Voltage
+
+12) Regular filler cells are added ___.
+a. Before Placement of std cells
+b. After Placement of Std Cells
+c. Before Floor planning
+d. Before Detail Routing
+
+13) Search and Repair is used for ___.
+a. Reducing IR Drop
+b. Reducing DRC
+c. Reducing EM violations
+d. None
+
+14) Maximum current density of a metal is available in ___.
+a. .lib
+b. .v
+c. .tf
+d. .sdc
+
+15) More IR drop is due to ___.
+a. Increase in metal width
+b. Increase in metal length
+c. Decrease in metal length
+d. Lot of metal layers
+
+16) The minimum height and width a cell can occupy in the design is called as ___.
+a. Unit Tile cell
+b. Multi heighten cell
+c. LVT cell
+d. HVT cell
+
+17) CRPR stands for ___.
+a. Cell Convergence Pessimism Removal
+b. Cell Convergence Preset Removal
+c. Clock Convergence Pessimism Removal
+d. Clock Convergence Preset Removal
+
+18) In OCV timing check, for setup time, ___.  
+a. Max delay is used for launch path and Min delay for capture path
+b. Min delay is used for launch path and Max delay for capture path
+c. Both  Max delay is used for launch and Capture path
+d. Both Min delay is used for both Capture and Launch paths
+
+19) "Total metal area and(or) perimeter of conducting layer / gate to gate area"  is called ___.  
+a. Utilization
+b. Aspect Ratio
+c. OCV
+d. Antenna Ratio
+
+20) The Solution for Antenna effect is ___.
+a. Diode insertion
+b. Shielding
+c. Buffer insertion
+d. Double spacing
+
+21) To avoid cross talk, the shielded net is usually connected to ___.
+a. floating
+b. VSS
+c. Both VDD and VSS
+d. Clock
+
+22) If the data is faster than the clock in Reg to Reg path ___ violation may come.
+a. Setup
+b. Hold
+c. Both
+d. None
+
+23) (重复，删除)
+
+
+24) Which  of the following is not present in SDC ___?
+a. Max tran
+b. Max cap
+c. Max fanout
+d. Max current density
+
+25) Timing sanity check means (with respect to PD)___.
+a. Checking timing of routed design with out net delays
+b. Checking  Timing  of placed design with net delays
+c. Checking Timing of unplaced design without net delays
+d. Checking Timing of routed design with net delays
+
+26) Which of the following is having highest priority at final stage (post routed) of the design ___?
+a. Setup violation
+b. Hold violation
+c. Skew
+d. None
+
+27) Which of the following is best suited for CTS?
+a. CLKBUF and CLKINV
+b. BUF
+c. INV
+d. all of them
+
+28) In Wire bond chip, Max voltage drop  will be there at(with out macros) ___.
+a. Left and Right sides
+b. Bottom and Top sides
+c. Middle
+d. None
+
+29) Which of the following is preferred while placing macros ___?
+a. Macros placed center of the die
+b. Macros placed left and right side of die
+c. Macros placed bottom and top sides of die
+d. Macros placed based on connectivity of the I/O
+
+30) Routing congestion can be avoided by ___.
+a. placing cells closer
+b. Placing cells at corners
+c. Distributing cells
+d. None
+
+31) Pitch of the wire  is ___.
+a. Min width
+b. Min spacing
+c. Min width - min spacing
+d. Min width + min spacing
+
+32) In Physical Design following step is  not there ___.
+a. Floorplaning
+b. Placement
+c. Design Synthesis
+d. CTS
+
+33) In technology file if 7 metals are there then which metals you will use for power?
+a. Metal1 and metal2
+b. Metal3 and metal4
+c. Metal5 and metal6
+d. Metal6 and metal7
+
+34) If metal6 and metal7 are used for the power in 7 metal layer process design then which metals you will use for clock ?
+a. Metal1 and metal2
+b. Metal3 and metal4
+c. Metal4 and metal5
+d. Metal6 and metal7
+
+35) In a reg to reg timing path Tclocktoq delay is 0.5ns and TCombo delay is 5ns and Tsetup is 0.5ns then the clock period should be ___.
+a. 1ns
+b. 3ns
+c. 5ns
+d. 6ns
+
+36) Difference between Clock buff/inverters and normal buff/inverters is __.
+a. Clock buff/inverters are faster than normal buff/inverters
+b. Clock buff/inverters are slower than normal buff/inverters
+c. Clock buff/inverters are having equal rise and fall times with high drive strengths compare to normal buff/inverters
+d. Normal buff/inverters are having equal rise and fall times with high drive strengths compare to Clock buff/inverters.
+
+37) Which configuration is more preferred during floorplaning ?
+a. Double back with flipped rows
+b. Double back with non flipped rows
+c. With channel spacing between rows and no double back
+d. With channel spacing between rows and double back
+
+38) What is the effect of high drive strength buffer when added in long net ?
+a. Delay on the net increases
+b. Capacitance on the net increases
+c. Delay on the net decreases
+d. Resistance on the net increases.
+
+39) Delay of a cell depends on which factors ?
+a. Output transition and input load
+b. Input transition and Output load
+c. Input transition and Output transition
+d. Input load and Output Load.
+
+40) After the final routing the violations in the design ___.
+a. There can be no setup, no hold violations
+b. There can be only setup violation but no hold
+c. There can be only hold violation not Setup violation
+d. There can be both violations.
+
+41) Utilization of the chip after placement optimization will be ___.
+a. Constant
+b. Decrease
+c. Increase
+d. None of the above
+
+42) What is routing congestion in the design?
+a. Ratio of required routing tracks to available routing tracks
+b. Ratio of available routing tracks to required routing tracks
+c. Depends on the routing layers available
+d. None of the above
+
+
+答案：
+01-05: d c b c b
+06-10: d a c d b
+11-15: d d b c b
+16-20: a c a d a
+21-25: b b x d c
+26-30: b a c d c
+31-35: d c d c d
+36-40: c a c b d
+41-42: c a

@@ -1,0 +1,338 @@
+《设计题库A》
+第1题：行波分频 vs 计数器+ICG门控分频（代码分析）
+考点：分频数推导 / 输出时钟性质与使用场景 / 50%占空比改法
+第2题：参数化偶数分频 N，50% 占空比
+第3题：50% 占空比 5 分频
+第4题：非 50% 占空比 3 分频
+通用追问1：补充 test_clk / test 信号，考察 test bypass 概念
+通用追问2：写了 buf 等实例原语则要求写 SDC；纯 Verilog 写法则问综合问题
+
+========================================================================
+问题1：解释分频数
+========================================================================
+
+[题面]
+下面是两种分频电路伪代码，clka 为源时钟，clkb 为分频输出。
+请分别解释二者的分频数是多少，并说明判断依据。
+
+[代码]
+
+方法一：
+reg q1, clkb;
+always @(posedge clka or negedge rst_n) begin
+    if (!rst_n) q1 <= 1'b0; else q1 <= ~q1;
+end
+always @(posedge q1 or negedge rst_n) begin
+    if (!rst_n) clkb <= 1'b0; else clkb <= ~clkb;
+end
+
+方法二：
+reg [1:0] cnt;
+always @(posedge clka or negedge rst_n) begin
+    if (!rst_n) cnt <= 2'b0; else cnt <= cnt + 1'b1;
+end
+wire clk_en = (cnt == 2'b11);
+
+reg en_latch;
+always @(*) begin
+    if (!clka) en_latch = clk_en;
+end
+assign clkb = clka & en_latch;
+
+[参考答案]
+
+方法一：第一级 T 触发器在 clka 每个上升沿翻转，中间节点 q1 为 2 分频；
+第二级在 q1 每个上升沿再翻转，输出再除 2，两级级联共 2×2 = 4 分频。
+
+方法二：2 位计数器 cnt 从 0 计到 3（2'b11）后回绕，每 4 个 clka 周期
+clk_en 拉高一拍，latch 锁存后与 clka 相与，使 clkb 每 4 个源周期通过
+1 个脉冲，上升沿间隔 4T，为 4 分频。
+
+========================================================================
+问题2：说明两者差别 + 追问
+========================================================================
+
+[题面]
+同上代码。二者分频数相同，请说明二者输出时钟的性质差别与各自适用场景。
+
+追问：如果需要 50% 占空比的分频输出，怎么修改方法二？
+
+[参考答案]
+
+一、性质差别（两种都是合法的分频时钟结构）
+
+1. 输出性质
+   方法一：真正的独立分频时钟，50% 占空比方波
+   方法二：clka 的"切片"，本质是 clock enable
+
+2. 占空比
+   方法一：50%
+   方法二：1/8（每 4 拍通过 1 个高电平半周期），非 50%
+
+3. 边沿相位
+   方法一：相对 clka 延后一级 clk-to-q，分频链越长插入延迟越大，构成独立相位
+   方法二：边沿与 clka 严格对齐，无 clk-to-q 累积，clkb 域与 clka 域同沿
+
+4. 毛刺
+   方法一：寄存器输出，天然无毛刺
+   方法二：纯 AND 会在 en 于上升沿变化时切出 runt 毛刺；latch 在高电平
+           期间关闭、屏蔽该变化，低电平期间透明且输出恒为 0，保证无毛刺
+           （ICG 原理）
+
+5. 功耗
+   方法一：每级翻转率减半，分频链本身功耗极低；但下游时钟网络按 1/N 翻转
+   方法二：计数器每拍翻转；下游时钟网络翻转率降为 1/4，省的是负载上的动态功耗
+
+6. 后端处理
+   方法一：按 create_generated_clock 约束，参与时钟树综合，skew 由 CTS 平衡
+   方法二：用库中 ICG cell（FPGA 用 BUFGCE），由工具挂入时钟树，DFT 友好
+
+7. 适用场景
+   方法一：需要 50% 占空比、双沿使用或独立慢时钟域——RTC/always-on 低功耗
+           分频链、看门狗 tick、频率测量
+   方法二：周期性休眠省功耗——模块每 4 拍工作 1 拍、慢速轮询外设、
+           clock enable 语义
+
+核心考点：选择依据是需要独立相位、50% 占空比的真分频时钟（方法一），
+还是与主时钟沿对齐的门控/使能时钟（方法二，省功耗）。
+
+二、追问参考答案
+
+（1）为什么门控结构改不出 50%：
+clkb = clka & en_latch 只能通过 clka 的高电平半周期，每个周期低电平段
+永远输出 0；把 en 拉长到 2 拍也只是输出 2 个分离的脉冲，得不到连续的
+50% 方波。要 50% 必须放弃门控，改成寄存器翻转输出。
+
+（2）修改方法：删掉 AND/latch，计数器每 N/2 拍翻转 clkb。两种等价写法：
+
+写法一：计数器模 N/2（N=4 时模 2），计到 N/2-1 = 1 时翻转
+reg cnt;
+reg clkb;
+always @(posedge clka or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt  <= 1'b0;
+        clkb <= 1'b0;
+    end
+    else if (cnt == 1'b1) begin
+        cnt  <= 1'b0;
+        clkb <= ~clkb;
+    end
+    else begin
+        cnt <= cnt + 1'b1;
+    end
+end
+
+写法二：保留 2 位计数器 0..3，在半周期点 N/2-1=1 和整周期点 N-1=3 两处翻转
+reg [1:0] cnt;
+reg clkb;
+always @(posedge clka or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt  <= 2'b0;
+        clkb <= 1'b0;
+    end
+    else begin
+        cnt <= cnt + 1'b1;
+        if (cnt[0]) clkb <= ~clkb;
+    end
+end
+
+（3）验证：每 2 拍翻转一次，高 2 拍、低 2 拍，周期 4 拍，50% 占空比 4 分频。
+
+追问考点：偶分频 50% 占空比通用写法（计到 N/2-1 翻转 / 每半周期翻转）；
+门控脉冲与真分频方波的本质区别。
+========================================================================
+第2题：参数化偶数分频 N，50% 占空比
+========================================================================
+
+[题面]
+写一个参数化任意偶数 N 分频电路，占空比 50%。clka 为源时钟，clkb 为
+分频输出，rst_n 低电平异步复位。
+
+[参考代码]
+
+module clk_div_even #(
+    parameter N = 8
+)(
+    input  wire clka,
+    input  wire rst_n,
+    output reg  clkb
+);
+    reg [15:0] cnt;
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt  <= 16'd0;
+            clkb <= 1'b0;
+        end
+        else if (cnt == N/2 - 1) begin
+            cnt  <= 16'd0;
+            clkb <= ~clkb;
+        end
+        else begin
+            cnt <= cnt + 1'b1;
+        end
+    end
+endmodule
+
+[要点]
+每 N/2 拍翻转一次，高 N/2 拍、低 N/2 拍，周期 N 拍，50% 占空比。
+翻转点为 N/2-1（计数从 0 开始）。
+
+========================================================================
+第3题：50% 占空比 5 分频
+========================================================================
+
+[题面]
+写一个占空比 50% 的 5 分频电路。clka 为源时钟，clkb 为分频输出。
+
+[参考代码]
+
+module clk_div5 (
+    input  wire clka,
+    input  wire rst_n,
+    output wire clkb
+);
+    reg [2:0] cnt_p, cnt_n;
+    reg clk_p, clk_n;
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n)             cnt_p <= 3'd0;
+        else if (cnt_p == 3'd4) cnt_p <= 3'd0;
+        else                    cnt_p <= cnt_p + 1'b1;
+    end
+    always @(negedge clka or negedge rst_n) begin
+        if (!rst_n)             cnt_n <= 3'd0;
+        else if (cnt_n == 3'd4) cnt_n <= 3'd0;
+        else                    cnt_n <= cnt_n + 1'b1;
+    end
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n) clk_p <= 1'b0;
+        else if (cnt_p == 3'd0 || cnt_p == 3'd2) clk_p <= ~clk_p;
+    end
+    always @(negedge clka or negedge rst_n) begin
+        if (!rst_n) clk_n <= 1'b0;
+        else if (cnt_n == 3'd0 || cnt_n == 3'd2) clk_n <= ~clk_n;
+    end
+    assign clkb = clk_p | clk_n;
+endmodule
+
+[要点]
+N=5，翻转点为 0 与 (N-1)/2 = 2。clk_p 由 posedge 产生、clk_n 由 negedge
+产生，两者翻转点相同但相位错半拍；相或后高 2.5 拍、低 2.5 拍，得到 50%
+占空比 5 分频。不可写成同一 always 块双边沿触发（不可综合）。
+
+========================================================================
+第4题：非 50% 占空比 3 分频
+========================================================================
+
+[题面]
+写一个占空比非 50% 的 3 分频电路。clka 为源时钟，clkb 为分频输出。
+
+[参考代码]
+
+module clk_div3 (
+    input  wire clka,
+    input  wire rst_n,
+    output reg  clkb
+);
+    reg [1:0] cnt;
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n)           cnt <= 2'd0;
+        else if (cnt == 2'd2) cnt <= 2'd0;
+        else                  cnt <= cnt + 1'b1;
+    end
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n) clkb <= 1'b0;
+        else if (cnt == 2'd0 || cnt == 2'd1) clkb <= ~clkb;
+    end
+endmodule
+
+[要点]
+N=3，翻转点为 0 与 (N-1)/2 = 1，仅在源时钟上升沿翻转。高 1 拍、低 2 拍，
+占空比 1/3，周期 3 拍。若需 50% 占空比则按第 3 题双沿相或法扩展。
+
+========================================================================
+通用追问1（第2/3/4题通用）：补充 test_clk / test 信号
+========================================================================
+
+[追问]
+给分频电路补上 test_clk、test 两个输入信号，说明其用途并修改代码。
+
+[参考答案]
+
+一、修改代码（以第2题为例，第3/4题同理）
+
+module clk_div_even #(
+    parameter N = 8
+)(
+    input  wire clka,
+    input  wire rst_n,
+    input  wire test,
+    input  wire test_clk,
+    output wire clkb
+);
+    reg [15:0] cnt;
+    reg div_clk;
+    always @(posedge clka or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt     <= 16'd0;
+            div_clk <= 1'b0;
+        end
+        else if (cnt == N/2 - 1) begin
+            cnt     <= 16'd0;
+            div_clk <= ~div_clk;
+        end
+        else begin
+            cnt <= cnt + 1'b1;
+        end
+    end
+    assign clkb = test ? test_clk : div_clk;
+endmodule
+
+二、test bypass 概念要点
+
+1. 为什么需要 bypass：scan/ATPG 场景下分频时钟不可控——shift 阶段移位
+   时钟被除 N，扫描移位慢 N 倍；capture 边沿位置不受 ATE 控制，测试结果
+   不可预期。DFT 要求测试态下所有时钟直接可控、可观测。
+
+2. 实现方式：test（scan_mode/test_mode）有效时输出直接选通 test_clk
+   （ATE 直接驱动或功能源时钟），分频逻辑被屏蔽；分频器本身一般不进
+   scan chain，下游 FF 在 bypass 后由 test_clk 扫描可控。
+
+3. 工程注意：时钟路径上的 mux 应使用库 clock mux 单元（glitch-free），
+   不手写 assign 逻辑 mux；test/test_clk 由 DFT 控制结构驱动，ATPG 可强制。
+
+========================================================================
+通用追问2（第2/3/4题通用，分支考察）
+========================================================================
+
+[追问]
+分支A：若候选人在时钟路径写了 buf 等实例原语，要求写出 SDC。
+分支B：若是纯 Verilog RTL 写法（无实例），问综合会遇到什么问题。
+
+[参考答案]
+
+一、分支A：写 SDC
+
+create_clock -name clka -period 10.0 [get_ports clka]
+create_generated_clock -name clkb -divide_by 4 \
+    -source [get_ports clka] [get_pins u_buf/Z]
+set_clock_uncertainty -setup 0.1 -hold 0.05 [get_clocks clkb]
+set_dont_touch_network [get_clocks clkb]
+
+要点：
+1. create_generated_clock 定义点应放在时钟路径关键节点（如 buffer 输出
+   pin u_buf/Z），该点之后才是真正的时钟网络。
+2. -source 指向源时钟起点，-divide_by 声明分频比，工具据此推导边沿关系。
+3. set_dont_touch_network 防止综合/优化阶段改动时钟网络结构。
+
+二、分支B：纯 Verilog coding style 的综合问题
+
+1. clkb 是寄存器输出、被下游当时钟用，但若不加 create_generated_clock
+   约束，综合器只当它是普通数据 net，下游以 clkb 为时钟的 FF 时序路径
+   全部 unconstrained，不做分析。
+2. 综合器可能对分频逻辑做优化、复制或 retiming，破坏分频结构，需要
+   set_dont_touch 保护。
+3. 时钟网络没有 clock buffer：fanout 大时综合器按普通逻辑插 buffer，
+   skew 与插入延迟不可控，需 CTS 兜底，且前提是 net 被正确识别为时钟。
+4. 若用组合逻辑生成时钟（如第3题 clk_p|clk_n 相或），时钟路径上出现
+   组合门，有毛刺风险，DC 会报 gated clock / combinational 警告。
+5. negedge 触发 FF（第3/4题用到）对 scan 不友好，DFT 需特殊处理。
